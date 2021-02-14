@@ -1,36 +1,49 @@
 <template>
-  <q-page class="q-pa-md">
-    <div class="row q-mb-lg">
-      <search />
-      <sort />
+  <q-page>
+    <div class="q-pa-md absolute full-width full-height column">
+      <div class="row q-mb-lg">
+        <search />
+        <sort />
+      </div>
+      <p
+        v-if="
+          search &&
+            !Object.keys(tasksTodo).length &&
+            !Object.keys(tasksCompleted).length
+        "
+      >
+        No search results.
+      </p>
+      <q-scroll-area class="q-scroll-area-tasks">
+        <no-tasks
+          v-if="
+            !Object.keys(tasksTodo).length &&
+              !search &&
+              !settings.showTasksInOneList
+          "
+        ></no-tasks>
+        <tasks-todo
+          v-if="Object.keys(tasksTodo).length"
+          :tasksTodo="tasksTodo"
+        />
+        <tasks-completed
+          v-if="Object.keys(tasksCompleted).length"
+          :tasksCompleted="tasksCompleted"
+          class="q-mb-xl"
+        />
+      </q-scroll-area>
+      <div class="absolute-bottom text-center q-mb-lg no-pointer-events">
+        <q-btn
+          class="all-pointer-events"
+          round
+          dense
+          color="primary"
+          size="24px"
+          icon="add"
+          @click="showAddTask = true"
+        />
+      </div>
     </div>
-    <p
-      v-if="
-        search &&
-          !Object.keys(tasksTodo).length &&
-          !Object.keys(tasksCompleted).length
-      "
-    >
-      No search results.
-    </p>
-    <no-tasks v-if="!Object.keys(tasksTodo).length && !search"></no-tasks>
-    <tasks-todo v-if="Object.keys(tasksTodo).length" :tasksTodo="tasksTodo" />
-
-    <tasks-completed
-      v-if="Object.keys(tasksCompleted).length"
-      :tasksCompleted="tasksCompleted"
-    />
-    <div class="absolute-bottom text-center q-mb-lg">
-      <q-btn
-        round
-        dense
-        color="primary"
-        size="24px"
-        icon="add"
-        @click="showAddTask = true"
-      />
-    </div>
-
     <q-dialog v-model="showAddTask">
       <add-task @close="showAddTask = false" />
     </q-dialog>
@@ -43,6 +56,7 @@ import { mapGetters, mapState } from "vuex";
 export default {
   computed: {
     ...mapGetters("tasks", ["tasksTodo", "tasksCompleted"]),
+    ...mapGetters("settings", ["settings"]),
     ...mapState("tasks", ["search"])
   },
   components: {
@@ -66,4 +80,9 @@ export default {
 };
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.q-scroll-area-tasks {
+  display: flex;
+  flex-grow: 1;
+}
+</style>

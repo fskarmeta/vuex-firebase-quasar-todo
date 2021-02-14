@@ -4,14 +4,17 @@
     @click="updateTask({ id: id, updates: { completed: !task.completed } })"
     clickable
     :class="task.completed ? 'bg-green-1' : 'bg-orange-1'"
+    v-touch-hold:1000.mouse="showEditTaskModal"
   >
     <q-item-section side top>
       <q-checkbox :value="task.completed" class="no-pointer-events" />
     </q-item-section>
 
     <q-item-section>
-      <q-item-label :class="{ 'text-strike': task.completed }"
-        >{{ task.name }}
+      <q-item-label
+        :class="{ 'text-strike': task.completed }"
+        v-html="$options.filters.searchHighlight(task.name, search)"
+      >
       </q-item-label>
     </q-item-section>
 
@@ -23,11 +26,11 @@
 
         <div class="column">
           <q-item-label class="row justify-end" caption>
-            {{ task.dueDate }}
+            {{ task.dueDate | niceDate }}
           </q-item-label>
           <q-item-label class="row justify-end" caption>
             <small>
-              {{ task.dueTime }}
+              {{ taskDueTime }}
             </small>
           </q-item-label>
         </div>
@@ -41,7 +44,7 @@
           dense
           color="primary"
           icon="edit"
-          @click.stop="showEditTask = true"
+          @click.stop="showEditTaskModal"
         />
         <q-btn
           flat
@@ -61,7 +64,9 @@
 </template>
 
 <script>
-import { mapActions } from "vuex";
+import { date } from "quasar";
+
+import { mapActions, mapState, mapGetters } from "vuex";
 export default {
   data() {
     return {
@@ -82,10 +87,40 @@ export default {
         .onOk(() => {
           this.deleteTask(id);
         });
+    },
+    showEditTaskModal() {
+      this.showEditTask = true;
     }
   },
   components: {
     "edit-task": require("./Modals/EditTask").default
+  },
+  filters: {
+    niceDate(value) {
+      return date.formatDate(value, "MMM D");
+    },
+    searchHighlight(value, search) {
+      if (search) {
+        let searchRegExp = new RegExp(search, "ig");
+        return value.replace(searchRegExp, match => {
+          return '<span class="bg-yellow-6">' + match + "</span>";
+        });
+      }
+      return value;
+    }
+  },
+  computed: {
+    ...mapState("tasks", ["search"]),
+    ...mapGetters("settings", ["settings"]),
+    taskDueTime() {
+      if (this.settings.show12HourTimeFormat) {
+        return date.formatDate(
+          this.task.dueDate + " " + this.task.dueTime,
+          "h:mmA"
+        );
+      }
+      return this.task.dueTime;
+    }
   }
 };
 </script>

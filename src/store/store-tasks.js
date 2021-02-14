@@ -1,26 +1,27 @@
 import Vue from "vue";
 import { uid } from "quasar";
+import { firebaseDb, firebaseAuth } from "../boot/firebase";
 
 const state = {
   tasks: {
-    ID1: {
-      name: "Go to shop",
-      completed: false,
-      dueDate: "2019/01/11",
-      dueTime: "20.37"
-    },
-    ID2: {
-      name: "Get bananas",
-      completed: false,
-      dueDate: "2019/05/12",
-      dueTime: "18.30"
-    },
-    ID3: {
-      name: "Get apples",
-      completed: false,
-      dueDate: "2019/08/11",
-      dueTime: "13.22"
-    }
+    // ID1: {
+    //   name: "Go to shop",
+    //   completed: false,
+    //   dueDate: "2019/01/11",
+    //   dueTime: "20:37"
+    // },
+    // ID2: {
+    //   name: "Get bananas",
+    //   completed: false,
+    //   dueDate: "2019/05/12",
+    //   dueTime: "18:30"
+    // },
+    // ID3: {
+    //   name: "Get apples",
+    //   completed: false,
+    //   dueDate: "2019/08/11",
+    //   dueTime: "13:22"
+    // }
   },
   search: "",
   sort: "dueDate"
@@ -34,7 +35,6 @@ const mutations = {
     };
   },
   deleteTask(state, id) {
-    console.log(id);
     Vue.delete(state.tasks, id);
   },
   addTask(state, payload) {
@@ -68,6 +68,42 @@ const actions = {
   },
   setSort({ commit }, value) {
     commit("setSort", value);
+  },
+  fbReadData({ commit }) {
+    console.log("start reading data from firebase");
+    let userId = firebaseAuth.currentUser.uid;
+    let userTasks = firebaseDb.ref("tasks/" + userId);
+
+    // child added
+    userTasks.on("child_added", snapshot => {
+      let task = snapshot.val();
+
+      let payload = {
+        id: snapshot.key,
+        task: task
+      };
+
+      commit("addTask", payload);
+    });
+
+    // chiild changed
+
+    userTasks.on("child_changed", snapshot => {
+      let task = snapshot.val();
+
+      let payload = {
+        id: snapshot.key,
+        updates: task
+      };
+
+      commit("updateTask", payload);
+    });
+
+    //child removed
+    userTasks.on("child_removed", snapshot => {
+      let task = snapshot.val();
+      commit("deleteTask", snapshot.key);
+    });
   }
 };
 
@@ -89,7 +125,6 @@ const getters = {
         }
       })
       .forEach(key => (tasksSorted[key] = state.tasks[key]));
-    console.log(tasksSorted);
     return tasksSorted;
   },
   tasksFiltered: (state, getters) => {
